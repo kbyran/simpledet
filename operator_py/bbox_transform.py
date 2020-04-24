@@ -49,7 +49,7 @@ def clip_boxes(boxes, im_shape):
     return boxes
 
 
-def nonlinear_transform(ex_rois, gt_rois):
+def nonlinear_transform(ex_rois, gt_rois, means=[0, 0, 0, 0], stds=[1, 1, 1, 1]):
     """
     compute bounding box regression targets from ex_rois to gt_rois
     :param ex_rois: [N, 4]
@@ -75,10 +75,12 @@ def nonlinear_transform(ex_rois, gt_rois):
 
     targets = np.vstack(
         (targets_dx, targets_dy, targets_dw, targets_dh)).transpose()
+
+    targets = (targets - np.array([means], dtype=np.float)) / np.array([stds], dtype=np.float)
     return targets
 
 
-def nonlinear_pred(boxes, box_deltas):
+def nonlinear_pred(boxes, box_deltas, means=[0, 0, 0, 0], stds=[1, 1, 1, 1]):
     """
     Transform the set of class-agnostic boxes into class-specific boxes
     by applying the predicted offsets (box_deltas)
@@ -90,6 +92,7 @@ def nonlinear_pred(boxes, box_deltas):
         return np.zeros((0, box_deltas.shape[1]))
 
     boxes = boxes.astype(np.float, copy=False)
+    boxes = boxes * np.array([stds], dtype=np.float) + np.array([means], dtype=np.float)
     widths = boxes[:, 2] - boxes[:, 0] + 1.0
     heights = boxes[:, 3] - boxes[:, 1] + 1.0
     ctr_x = boxes[:, 0] + 0.5 * (widths - 1.0)
